@@ -1,0 +1,299 @@
+import os
+import requests
+import pandas as pd
+
+import requests
+
+import calendar
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+import pytz
+from dateutil import parser
+
+import gspread
+from google.oauth2.service_account import Credentials
+
+class Report12:
+    def __init__(self, CREDS_FILE, SCOPES):
+        self.CREDS_FILE = CREDS_FILE
+        self.SCOPES = SCOPES
+        
+        self.group_id = {
+            'Корректировки': 82522,
+            'Регистрации': 86531,
+            'Возвраты': 82521,
+            'Разное': 83860,
+            'Кейсы': 83508
+        }
+        self.sched = self.__load_schedule()
+        self.schedule = self.__get_schedule(self.sched)
+        self.MOA_API_CASES = 'https://mileonair.omnidesk.ru/api/cases.json'
+    
+    def __get_moa_tickets_page(self, params):
+        # Basic Authentication
+        staff_email = os.getenv('MOA_EMAIL')
+        api_key = os.getenv('MOA_API_KEY')
+
+        # URL
+        url = self.MOA_API_CASES
+
+        # Headers
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        # Make the request
+        response = requests.get(
+            url,
+            auth=(staff_email, api_key),
+            headers=headers,
+            params=params
+        )
+
+        # Check response
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        else:
+            print(f"Error: {response.status_code}")
+            print(response.text)
+            
+        return None
+
+    def __get_data_counts(self):
+        pages = '1', '2', '3', '4', '5'
+        df = None
+        all = []
+        for page in pages:
+            params = {
+                'status': 'waiting',
+                'page': page
+            }
+            data = self.__get_moa_tickets_page(params)
+            if (data['total_count'] == 0):
+                break
+            del data['total_count']
+            cases = [data[key]['case'] for key in data.keys()]
+            df = pd.DataFrame(cases)
+            all.append(df)
+            
+        df = pd.concat(all, ignore_index=True)
+        needed_columns = ['case_id', 'subject', 'group_id']
+        df = df[needed_columns]
+        return df
+        
+    def __get_counts(self, df):
+        counts = {
+            'Визиты': df['group_id'].value_counts()[self.group_id['Корректировки']] + df['group_id'].value_counts()[self.group_id['Регистрации']],
+            'Возвраты': df['group_id'].value_counts()[self.group_id['Возвраты']],
+            'Разное': df['group_id'].value_counts()[self.group_id['Разное']],
+            'Кейсы': df['group_id'].value_counts()[self.group_id['Кейсы']]
+        }
+        counts['Все'] = counts['Визиты'] + counts['Возвраты'] + counts['Разное'] + counts['Кейсы']
+        return counts
+
+    def __get_all_processed(self, period):
+        # Получаем текущее время в UTC
+        utc_now = datetime.now(pytz.UTC)
+        utc_today_6am = utc_now.replace(hour=6, minute=0, second=0, microsecond=0).timestamp()
+        utc_today_6pm = utc_now.replace(hour=18, minute=0, second=0, microsecond=0).timestamp()
+        utc_yesterday_6pm = utc_now.replace(day=utc_now.day - 1, hour=18, minute=0, second=0, microsecond=0).timestamp()
+
+        pages = '1', '2', '3', '4', '5'
+        df = None
+        all = []
+        for page in pages:
+            params = {
+                'page': page,
+                'sort': 'response_desc',
+            }
+            data = self.__get_moa_tickets_page(params)
+            del data['total_count']
+            cases = [data[key]['case'] for key in data.keys()]
+            df = pd.DataFrame(cases)
+            last = parser.parse(df.loc[99]['last_response_at']).timestamp()
+            all.append(df)
+            if (period == 'day'):
+                if (last < utc_today_6am):
+                    break
+            if (period == 'night'):
+                if (last < utc_yesterday_6pm):
+                    break
+            
+        df = pd.concat(all, ignore_index=True)
+        needed_columns = ['case_id', 'subject', 'group_id', 'last_response_at']
+        df = df[needed_columns]
+        
+        filtered_df = None
+        
+        if (period == 'day'):
+            # Фильтруем DataFrame
+            filtered_df = df[
+                (df['last_response_at'].apply(lambda x: parser.parse(x).timestamp()) >= utc_today_6am) &
+                (df['last_response_at'].apply(lambda x: parser.parse(x).timestamp()) <= utc_today_6pm)
+            ]
+        if (period == 'night'):
+            # Фильтруем DataFrame
+            filtered_df = df[
+                (df['last_response_at'].apply(lambda x: parser.parse(x).timestamp()) >= utc_yesterday_6pm) &
+                (df['last_response_at'].apply(lambda x: parser.parse(x).timestamp()) <= utc_today_6am)
+            ]
+
+        return filtered_df
+
+    def __get_report_title(self, period):
+        # Получаем текущее время в UTC
+        utc_now = datetime.now(pytz.UTC)
+
+        # Получаем текущую дату
+        today = utc_now.date()
+        
+        # Форматирование даты в нужный формат
+        date_format = "%d.%m.%Y"
+        
+        if period == 'night':
+            # До 7 утра UTC
+            yesterday = today - timedelta(days=1)
+            return f"Отчёт за {yesterday.strftime(date_format)} - {today.strftime(date_format)} (ночь)"
+        else:
+            # После 7 утра UTC
+            return f"Отчёт за {today.strftime(date_format)} (день)"
+        
+    def __get_period(self):
+        period = ''
+        utc_now = datetime.now(pytz.UTC)
+        current_hour = utc_now.hour
+
+        if current_hour < 7:
+            # До 7 утра UTC
+            period = 'night'
+        else:
+            period = 'day'
+        return period
+
+    def __load_schedule(self):
+        print("loading sched")
+        
+        # Аутентификация с использованием учетных данных сервисного аккаунта
+        creds = Credentials.from_service_account_file(self.CREDS_FILE, scopes=self.SCOPES)
+        
+        # Создание клиента для работы с Google Sheets
+        client = gspread.authorize(creds)
+        
+        # Открытие таблицы по ID
+        sheet_id = os.getenv('MOA_TABLE_ID_SCHEDULE')
+        sched = client.open_by_key(sheet_id)
+
+        return sched
+
+    def __get_sheet_num(self):
+        # Задаем дату сентября 2023
+        start_date = datetime(2023, 9, 1)
+
+        # Получаем текущую дату
+        current_date = datetime.now()
+
+        # Вычисляем разницу между датами
+        difference = relativedelta(current_date, start_date)
+
+        # Получаем количество прошедших месяцев
+        return difference.years * 12 + difference.months
+
+    def __get_schedule(self, sched):
+        worksheet = sched.get_worksheet(self.__get_sheet_num())
+
+        # employees = []
+
+        def format_name(full_name):
+            # Разделяем имя на части
+            parts = full_name.split()
+            
+            # Проверяем, что у нас есть как минимум фамилия и имя
+            if len(parts) < 2:
+                return "Неверный формат имени"
+            
+            # Берем фамилию и имя
+            last_name, first_name = parts[:2]
+            print(last_name, first_name)
+            
+            # Преобразуем имя в нужный формат
+            formatted_name = f"{first_name.capitalize()} {last_name[0].upper()}."
+            
+            return formatted_name
+
+        schedule = dict()
+        now = datetime.now()
+        this_month_days = calendar.monthrange(now.year, now.month)[1]
+
+        for i in range(3, 12):
+            selected = worksheet.row_values(i)
+            name = format_name(selected[0])
+            # employees.append(name)
+            schedule[name] = selected[1:this_month_days]
+            
+        # print(employees)
+        return schedule
+        
+    def __find_employees(self, schedule, day, period):
+        day_employees = []
+        night_employees = []
+
+        for employee, shifts in schedule.items():
+            if period == 'day':
+                if shifts[day-1] in ['Д', 'ДЧ']:
+                    day_employees.append(employee)
+                elif shifts[day-1] == 'Н':
+                    night_employees.append(employee)
+            elif period == 'night':
+                if day > 1 and shifts[day-2] == 'Н':
+                    night_employees.append(employee)
+                if shifts[day-1] in ['Д', 'ДЧ']:
+                    day_employees.append(employee)
+
+        return day_employees, night_employees
+
+    def __join_names(self, names):
+        if len(names) == 1:
+            return ''.join(names)
+        
+        first = ', '.join(names[:len(names) - 1])
+        return " и ".join([first, names[-1]])
+        
+
+    def __get_greeting(self, schedule, period):
+        day = datetime.now(pytz.UTC).day
+        
+        day_employees, night_employees = self.__find_employees(schedule, day, period)
+        
+        first = None
+        second = None
+        if period == 'day':
+            first = "На смене были: " + self.__join_names(day_employees) + "\n"
+            second = self.__join_names(night_employees) + " на смене, добрый вечер!"
+        else:
+            first = "На смене были: " + self.__join_names(night_employees) + "\n"
+            second = self.__join_names(day_employees) + " на смене, доброе утро!"
+        return first + second
+
+    def generate_report12(self):
+        period = self.__get_period()
+        df = self.__get_data_counts()
+        df_processed = self.__get_all_processed(period)
+        counts = self.__get_counts(df)
+        greet = self.__get_greeting(self.schedule, period)
+        
+        text = (f"{self.__get_report_title(period)}\n\n"
+                "Входящих звонков - \n"
+                "Исходящих звонков - \n\n"
+                
+                f"Обработанных тикетов - {len(df_processed)}\n"
+                f"В работе тикетов - {counts['Все']}\n\n"
+                
+                f"🔴 Визиты - {counts['Визиты']}\n"
+                f"🟢 Возвраты - {counts['Возвраты']}\n"
+                f"🔵 Разное - {counts['Разное']}\n"
+                f"🟠 Кейсы - {counts['Кейсы']}\n\n"
+
+                f"{greet}")
+        
+        return text
