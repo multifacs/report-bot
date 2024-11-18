@@ -4,30 +4,8 @@ from datetime import datetime
 
 from report7 import Report7
 from report12 import Report12
-
-def send_long_message(bot, message, m):
-    if len(m) > 4095:
-        parts = []
-        lines = m.split('\n')
-        current_part = ''
-        
-        for line in lines:
-            if len(current_part) + len(line) + 1 <= 4095:  # +1 для \n
-                current_part += line + '\n'
-            else:
-                if current_part:
-                    parts.append(current_part)
-                current_part = line + '\n'
-        
-        if current_part:  # Добавляем последнюю часть
-            parts.append(current_part)
-            
-        for part in parts:
-            # bot.reply_to(message, text=part, parse_mode="HTML")
-            bot.send_message(message.chat.id, text=part, parse_mode="HTML")
-    else:
-        # bot.reply_to(message, text=m, parse_mode="HTML")
-        bot.send_message(message.chat.id, text=m, parse_mode="HTML")
+from scheduled import Scheduled
+from misc import send_long_message
 
 def main():
     BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -40,6 +18,7 @@ def main():
     
     rep7 = Report7(CREDS_FILE, SCOPES)
     rep12 = Report12(CREDS_FILE, SCOPES)
+    sched = Scheduled(rep7)
 
     @bot.message_handler(commands=['report12'])
     def handle_report_command(message):
@@ -59,19 +38,9 @@ def main():
         report = rep7.generate_report7()
         # Send the report back to the user
         m = report['Разное']
-        send_long_message(bot, message, m)
+        send_long_message(bot, message.chat.id, m)
         m = report['Кейсы']
-        send_long_message(bot, message, m)
-        
-    from apscheduler.schedulers.background import BackgroundScheduler
-
-    def tick():
-        print('Tick! The time is: %s' % datetime.now())
-        bot.send_message(os.getenv('MOA_CHAT_ID'), 'Tick! The time is: %s' % datetime.now())
-        
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(tick, 'cron', hour=5, minute=7)
-    scheduler.start()
+        send_long_message(bot, message.chat.id, m)
 
     # Start polling (this keeps the bot running and listening for messages)
     bot.polling()
