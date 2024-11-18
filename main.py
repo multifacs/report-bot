@@ -22,6 +22,8 @@ def main():
 
     @bot.message_handler(commands=['report12'])
     def handle_report_command(message):
+        print(f"Chat id: {message.chat.id}")
+        
         # Generate a report (this is just a placeholder for now)
         report = rep12.generate_report12()
         # Send the report back to the user
@@ -31,8 +33,7 @@ def main():
     # Handler for the /report command
     @bot.message_handler(commands=['report7'])
     def handle_report_command(message):
-        
-        print(message.chat.id)
+        print(f"Chat id: {message.chat.id}")
         
         # Generate a report (this is just a placeholder for now)
         report = rep7.generate_report7()
@@ -43,7 +44,7 @@ def main():
         send_long_message(bot, message.chat.id, m)
 
     # Start polling (this keeps the bot running and listening for messages)
-    bot.polling()
+    bot.infinity_polling(restart_on_change=True)
 
 if __name__ == "__main__":
     main()
