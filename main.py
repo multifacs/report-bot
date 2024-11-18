@@ -18,7 +18,7 @@ def main():
     
     rep7 = Report7(CREDS_FILE, SCOPES)
     rep12 = Report12(CREDS_FILE, SCOPES)
-    sched = Scheduled(rep7)
+    sched = Scheduled(bot, rep7)
 
     @bot.message_handler(commands=['report12'])
     def handle_report_command(message):
