@@ -44,7 +44,7 @@ def main():
         send_long_message(bot, message.chat.id, m)
 
     # Start polling (this keeps the bot running and listening for messages)
-    bot.infinity_polling(restart_on_change=True)
+    bot.infinity_polling(restart_on_change=False)
 
 if __name__ == "__main__":
     main()
