@@ -6,7 +6,7 @@ class Scheduled:
     def __init__(self, rep7):
         self.rep7 = rep7
         scheduler = BackgroundScheduler()
-        scheduler.add_job(self.__scheduledReport7, 'cron', hour=5, minute=58)
+        scheduler.add_job(self.__scheduledReport7, 'cron', hour=3, minute=58)
         scheduler.start()
         
     def __scheduledReport7(self):
