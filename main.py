@@ -6,8 +6,17 @@ from report7 import Report7
 from report12 import Report12
 from scheduled import Scheduled
 from misc import send_long_message
+from dotenv import load_dotenv, find_dotenv
 
 def main():
+    dotenv_path = find_dotenv()
+
+    if dotenv_path:
+        load_dotenv(dotenv_path)
+        print(f"Загружен .env файл из: {dotenv_path}")
+    else:
+        print("Файл .env не найден, будут использоваться системные переменные.")
+
     BOT_TOKEN = os.getenv('BOT_TOKEN')
     bot = telebot.TeleBot(BOT_TOKEN)
     

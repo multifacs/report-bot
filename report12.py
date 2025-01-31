@@ -83,11 +83,14 @@ class Report12:
         return df
         
     def __get_counts(self, df):
+        # print(df)
+        value_counts = df['group_id'].value_counts()
         counts = {
-            'Визиты': df['group_id'].value_counts()[self.group_id['Корректировки']] + df['group_id'].value_counts()[self.group_id['Регистрации']],
-            'Возвраты': df['group_id'].value_counts()[self.group_id['Возвраты']],
-            'Разное': df['group_id'].value_counts()[self.group_id['Разное']],
-            'Кейсы': df['group_id'].value_counts()[self.group_id['Кейсы']]
+            'Визиты': value_counts.get(self.group_id['Корректировки'], 0) + 
+                    value_counts.get(self.group_id['Регистрации'], 0),
+            'Возвраты': value_counts.get(self.group_id['Возвраты'], 0),
+            'Разное': value_counts.get(self.group_id['Разное'], 0),
+            'Кейсы': value_counts.get(self.group_id['Кейсы'], 0)
         }
         counts['Все'] = counts['Визиты'] + counts['Возвраты'] + counts['Разное'] + counts['Кейсы']
         return counts
@@ -95,49 +98,65 @@ class Report12:
     def __get_all_processed(self, period):
         # Получаем текущее время в UTC
         utc_now = datetime.now(pytz.UTC)
+
+        # Рассчитываем временные метки
         utc_today_6am = utc_now.replace(hour=6, minute=0, second=0, microsecond=0).timestamp()
         utc_today_6pm = utc_now.replace(hour=18, minute=0, second=0, microsecond=0).timestamp()
-        utc_yesterday_6pm = utc_now.replace(day=utc_now.day - 1, hour=18, minute=0, second=0, microsecond=0).timestamp()
+        utc_yesterday_6pm = (utc_now - timedelta(days=1)).replace(
+            hour=18, minute=0, second=0, microsecond=0
+        ).timestamp()
 
-        pages = '1', '2', '3', '4', '5'
+        pages = ['1', '2', '3', '4', '5']
+        all_dfs = []  # Список для хранения DataFrame
         df = None
-        all = []
+
         for page in pages:
             params = {
                 'page': page,
                 'sort': 'response_desc',
             }
+            # Получаем данные с помощью кастомного метода
             data = self.__get_moa_tickets_page(params)
+
+            # Удаляем ненужное поле
             del data['total_count']
+
+            # Формируем DataFrame из данных
             cases = [data[key]['case'] for key in data.keys()]
             df = pd.DataFrame(cases)
-            last = parser.parse(df.loc[99]['last_response_at']).timestamp()
-            all.append(df)
-            if (period == 'day'):
-                if (last < utc_today_6am):
-                    break
-            if (period == 'night'):
-                if (last < utc_yesterday_6pm):
-                    break
-            
-        df = pd.concat(all, ignore_index=True)
+
+            # Получаем временную метку последнего ответа
+            last = parser.parse(df.loc[len(df) - 1]['last_response_at']).timestamp()
+
+            # Добавляем DataFrame в список
+            all_dfs.append(df)
+
+            # Условие завершения цикла в зависимости от периода
+            if period == 'day' and last < utc_today_6am:
+                break
+            if period == 'night' and last < utc_yesterday_6pm:
+                break
+
+        # Объединяем все DataFrame в один
+        df = pd.concat(all_dfs, ignore_index=True)
+
+        # Оставляем только нужные столбцы
         needed_columns = ['case_id', 'subject', 'group_id', 'last_response_at']
         df = df[needed_columns]
-        
-        filtered_df = None
-        
-        if (period == 'day'):
-            # Фильтруем DataFrame
+
+        # Фильтруем DataFrame в зависимости от периода
+        if period == 'day':
             filtered_df = df[
                 (df['last_response_at'].apply(lambda x: parser.parse(x).timestamp()) >= utc_today_6am) &
                 (df['last_response_at'].apply(lambda x: parser.parse(x).timestamp()) <= utc_today_6pm)
             ]
-        if (period == 'night'):
-            # Фильтруем DataFrame
+        elif period == 'night':
             filtered_df = df[
                 (df['last_response_at'].apply(lambda x: parser.parse(x).timestamp()) >= utc_yesterday_6pm) &
                 (df['last_response_at'].apply(lambda x: parser.parse(x).timestamp()) <= utc_today_6am)
             ]
+        else:
+            raise ValueError("Invalid period. Allowed values are 'day' or 'night'.")
 
         return filtered_df
 
@@ -240,19 +259,22 @@ class Report12:
 
         for employee, shifts in schedule.items():
             if period == 'day':
-                if shifts[day-1] in ['Д', 'ДЧ']:
+                if day - 1 < len(shifts) and shifts[day - 1] in ['Д', 'ДЧ']:
                     day_employees.append(employee)
-                elif shifts[day-1] == 'Н':
+                elif day - 1 < len(shifts) and shifts[day - 1] == 'Н':
                     night_employees.append(employee)
             elif period == 'night':
-                if day > 1 and shifts[day-2] == 'Н':
+                if day > 1 and day - 2 < len(shifts) and shifts[day - 2] == 'Н':
                     night_employees.append(employee)
-                if shifts[day-1] in ['Д', 'ДЧ']:
+                if day - 1 < len(shifts) and shifts[day - 1] in ['Д', 'ДЧ']:
                     day_employees.append(employee)
 
         return day_employees, night_employees
 
     def __join_names(self, names):
+        if not names:  # Если список пустой
+            return ''
+        
         if len(names) == 1:
             return ''.join(names)
         
