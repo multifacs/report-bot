@@ -21,6 +21,8 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 400 ~/.ssh/id_ed25519
 
+          ssh -o StrictHostKeyChecking=no -T ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} echo "Host verified"
+
       - uses: actions/checkout@v4
 
       - name: Create .env file
