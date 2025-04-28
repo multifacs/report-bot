@@ -1,0 +1,58 @@
+name: Deploy
+
+on: workflow_dispatch
+
+env:
+  DOCKER_HOST: ${{ vars.DOCKER_HOST }}
+
+jobs:
+  run_pull:
+    name: Run, Pull and Docker Run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: install ssh keys
+        # check this thread to understand why its needed:
+        # https://stackoverflow.com/a/70447517
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+          cat <<EOF >> ~/.ssh/known_hosts
+          ${{ secrets.HOSTS }}
+          EOF
+
+          cat ~/.ssh/known_hosts
+
+          # Verify connection (optional)
+          ssh -o StrictHostKeyChecking=no -T ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} echo "Host verified"
+
+          # Verify GitHub connection (optional)
+          # ssh -vT git@github.com
+
+      - uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" > .env
+          echo "MOA_API_KEY=${{ secrets.MOA_API_KEY }}" > .env
+          echo "MOA_CHAT_ID=${{ vars.MOA_CHAT_ID }}" > .env
+          echo "MOA_EMAIL=${{ vars.MOA_EMAIL }}" > .env
+          echo "MOA_TABLE_ID_DAILY=${{ vars.MOA_TABLE_ID_DAILY }}" > .env
+          echo "MOA_TABLE_ID_SCHEDULE=${{ vars.MOA_TABLE_ID_SCHEDULE }}" > .env
+        shell: bash
+
+      - name: connect and pull
+        run: |
+          docker login --username ${{ github.actor }} --password ${{ secrets.GH_PAT }} ghcr.io
+          docker compose config
+          docker compose up -d --pull always --remove-orphans --force-recreate --wait --wait-timeout 30
+          docker ps
+
+      - name: cleanup
+        run: rm -rf ~/.ssh
