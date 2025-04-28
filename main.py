@@ -25,6 +25,7 @@ def main():
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
     # Путь к файлу с учетными данными
     GOOGLE_CREDS = base64.b64decode(os.getenv('GOOGLE_CREDS')).decode('utf-8')
+    print(GOOGLE_CREDS)
     
     rep7 = Report7(GOOGLE_CREDS, SCOPES)
     rep12 = Report12(GOOGLE_CREDS, SCOPES)
