@@ -39,6 +39,7 @@ jobs:
           echo "MOA_TABLE_ID_DAILY=${{ vars.MOA_TABLE_ID_DAILY }}" >> .env
           echo "MOA_TABLE_ID_SCHEDULE=${{ vars.MOA_TABLE_ID_SCHEDULE }}" >> .env
           echo "GOOGLE_CREDS=$(echo '${{ secrets.GOOGLE_CREDS }}' | base64)" >> .env
+          cat .env
         shell: bash
 
       - name: connect and pull
