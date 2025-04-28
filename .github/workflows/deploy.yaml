@@ -26,7 +26,7 @@ jobs:
 
           ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 
-          # ssh -o StrictHostKeyChecking=no -T ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} echo "Host verified"
+          ssh -o StrictHostKeyChecking=no -T ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} echo "Host verified"
 
       - uses: actions/checkout@v4
 
