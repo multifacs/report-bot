@@ -20,16 +20,9 @@ jobs:
 
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 400 ~/.ssh/id_ed25519
-          
-          # ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-          cat <<EOF >> ~/.ssh/known_hosts
-          ${{ vars.HOSTS }}
-          EOF
-
-          cat ~/.ssh/known_hosts
-
-          ssh -o StrictHostKeyChecking=no -T ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }} echo "Host verified"
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/id_ed25519
 
       - uses: actions/checkout@v4
 
