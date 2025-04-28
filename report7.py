@@ -13,7 +13,7 @@ class Report7:
         print("loading doc")
         
         # Аутентификация с использованием учетных данных сервисного аккаунта
-        service_account_info = json.load(self.CREDS)
+        service_account_info = json.loads(self.CREDS)
         creds = Credentials.from_service_account_info(service_account_info, scopes=self.SCOPES)
         
         # Создание клиента для работы с Google Sheets
