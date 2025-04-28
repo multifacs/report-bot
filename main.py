@@ -1,3 +1,4 @@
+import base64
 import telebot
 import os
 from datetime import datetime
@@ -23,7 +24,7 @@ def main():
     # Определение области доступа
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
     # Путь к файлу с учетными данными
-    GOOGLE_CREDS = os.getenv('GOOGLE_CREDS')
+    GOOGLE_CREDS = base64.b64decode(os.getenv('GOOGLE_CREDS')).decode('utf-8')
     
     rep7 = Report7(GOOGLE_CREDS, SCOPES)
     rep12 = Report12(GOOGLE_CREDS, SCOPES)
