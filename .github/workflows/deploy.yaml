@@ -44,8 +44,6 @@ jobs:
       - name: connect and pull
         run: |
           docker login --username ${{ github.actor }} --password ${{ secrets.GH_PAT }} ghcr.io
-          docker compose config
-          echo $DOCKER_HOST
           docker compose up -d --pull always --remove-orphans --force-recreate --wait --wait-timeout 30
           docker ps
 
