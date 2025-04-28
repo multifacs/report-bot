@@ -23,10 +23,10 @@ def main():
     # Определение области доступа
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
     # Путь к файлу с учетными данными
-    CREDS_FILE = "clean-emblem-410317-69ea78d2ab1c.json"
+    GOOGLE_CREDS = os.getenv('GOOGLE_CREDS')
     
-    rep7 = Report7(CREDS_FILE, SCOPES)
-    rep12 = Report12(CREDS_FILE, SCOPES)
+    rep7 = Report7(GOOGLE_CREDS, SCOPES)
+    rep12 = Report12(GOOGLE_CREDS, SCOPES)
     sched = Scheduled(bot, rep7)
 
     @bot.message_handler(commands=['report12'])

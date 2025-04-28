@@ -1,18 +1,20 @@
+import json
 import gspread
 from google.oauth2.service_account import Credentials
 
 import os
 
 class Report7:
-    def __init__(self, CREDS_FILE, SCOPES):
-        self.CREDS_FILE = CREDS_FILE
+    def __init__(self, CREDS, SCOPES):
+        self.CREDS = CREDS
         self.SCOPES = SCOPES
         
     def __load_doc(self):
         print("loading doc")
         
         # Аутентификация с использованием учетных данных сервисного аккаунта
-        creds = Credentials.from_service_account_file(self.CREDS_FILE, scopes=self.SCOPES)
+        service_account_info = json.load(self.CREDS)
+        creds = Credentials.from_service_account_info(service_account_info, scopes=self.SCOPES)
         
         # Создание клиента для работы с Google Sheets
         client = gspread.authorize(creds)
