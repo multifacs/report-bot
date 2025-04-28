@@ -1,6 +1,5 @@
 FROM python:3.13-slim
 WORKDIR /app
 COPY . .
-RUN pip install poetry
-RUN poetry install --no-root
+RUN pip install -r requirements.txt
 CMD python3 main.py
