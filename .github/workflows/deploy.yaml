@@ -21,19 +21,8 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          # ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-          cat <<EOF >> ~/.ssh/known_hosts
-          ${{ secrets.HOSTS }}
-          EOF
-
-          cat ~/.ssh/known_hosts
-
           # Verify connection (optional)
-          ssh -o StrictHostKeyChecking=no -T ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} echo "Host verified"
-
-          # Verify GitHub connection (optional)
-          # ssh -vT git@github.com
+          # ssh -o StrictHostKeyChecking=no -T ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }}
 
       - uses: actions/checkout@v4
 
@@ -51,7 +40,7 @@ jobs:
         run: |
           docker login --username ${{ github.actor }} --password ${{ secrets.GH_PAT }} ghcr.io
           docker compose config
-          docker compose up -d --pull always --remove-orphans --force-recreate --wait --wait-timeout 30
+          docker compose up --env-file .env -d --pull always --remove-orphans --force-recreate --wait --wait-timeout 30
           docker ps
 
       - name: cleanup
