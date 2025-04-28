@@ -30,7 +30,7 @@ class Report7:
         worksheet = doc.get_worksheet_by_id(19278)
 
         # Получаем все значения из колонки I, начиная с 3-й строки
-        column_i_values = worksheet.col_values(9)[2:]  # 9 - это номер колонки I
+        column_i_values = worksheet.col_values(2)[2:]  # 2 - это номер колонки B
 
         # Преобразуем каждое значение в строку и создаем список
         result = []
