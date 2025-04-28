@@ -4,4 +4,4 @@ services:
   bot:
     image: ghcr.io/multifacs/report-bot:latest
     build: .
-    env_file: .env
+    env_file: ".env"

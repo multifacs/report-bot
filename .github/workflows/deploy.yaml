@@ -21,9 +21,6 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 400 ~/.ssh/id_ed25519
 
-          # Verify connection (optional)
-          # ssh -o StrictHostKeyChecking=no -T ${{ vars.SSH_USER }}@${{ vars.SSH_HOST }}
-
       - uses: actions/checkout@v4
 
       - name: Create .env file
@@ -40,7 +37,7 @@ jobs:
         run: |
           docker login --username ${{ github.actor }} --password ${{ secrets.GH_PAT }} ghcr.io
           docker compose config
-          docker compose up --env-file .env -d --pull always --remove-orphans --force-recreate --wait --wait-timeout 30
+          docker compose up -d --pull always --remove-orphans --force-recreate --wait --wait-timeout 30
           docker ps
 
       - name: cleanup
