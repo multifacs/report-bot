@@ -69,7 +69,7 @@ class Report7:
 
     def generate_report7(self):
         doc = self.__load_doc()
-        report = {"Разное": f"Разное\n\n{self.__generate_misc(doc)}",
+        report = {"·ON·FOOD": f"Разное\n\n{self.__generate_misc(doc)}",
                 "Кейсы": f"Кейсы\n\n{self.__generate_cases(doc)}",
                 }
         return report
