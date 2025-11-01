@@ -29,9 +29,9 @@ class Report12:
             "·ON·PASS (эскалация в Нейрон)": 83860,
             "·ON·FOOD (эскалация в Нейрон)": 92089,
             "·ON·TRACK (эскалация в Нейрон)": 92090,
-            "•ON•TAXI (эскалация в Нейрон)": 94907,
-            "•ON•PACK (эскалация в Нейрон)": 94401,
-            "•ON•VIP": 96273,
+            "·ON·TAXI (эскалация в Нейрон)": 94907,
+            "·ON·PACK (эскалация в Нейрон)": 94401,
+            "·ON·VIP": 96273,
             "Запрос по кейсу": 88994,
             "Изъятые вещи": 83197,
             "Забытые вещи (Победа)": 84599,
@@ -110,9 +110,9 @@ class Report12:
             'Разное': value_counts.get(self.group_id['·ON·PASS (эскалация в Нейрон)'], 0) +
             value_counts.get(self.group_id['·ON·FOOD (эскалация в Нейрон)'], 0) +
             value_counts.get(self.group_id['·ON·TRACK (эскалация в Нейрон)'], 0) +
-            value_counts.get(self.group_id['•ON•TAXI (эскалация в Нейрон)'], 0) +
-            value_counts.get(self.group_id['•ON•PACK (эскалация в Нейрон)'], 0) +
-            value_counts.get(self.group_id['•ON•VIP'], 0) +
+            value_counts.get(self.group_id['·ON·TAXI (эскалация в Нейрон)'], 0) +
+            value_counts.get(self.group_id['·ON·PACK (эскалация в Нейрон)'], 0) +
+            value_counts.get(self.group_id['·ON·VIP'], 0) +
             value_counts.get(self.group_id['МИЛИ (эскалация в Нейрон)'], 0) +
             value_counts.get(self.group_id['Запрос менеджеру'], 0) +
             value_counts.get(
