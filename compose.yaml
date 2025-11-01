@@ -5,4 +5,4 @@ services:
     image: ghcr.io/multifacs/report-bot:latest
     restart: always
     build: .
-    env_file: ".env"
+    # env_file: ".env"
