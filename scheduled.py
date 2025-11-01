@@ -13,7 +13,7 @@ class Scheduled:
     def __scheduledReport7(self):
         report = self.rep7.generate_report7()
         # Send the report back to the user
-        m = report['Разное']
+        m = report['·ON·FOOD']
         send_long_message(self.bot, os.getenv('MOA_CHAT_ID'), m)
         m = report['Кейсы']
         send_long_message(self.bot, os.getenv('MOA_CHAT_ID'), m)

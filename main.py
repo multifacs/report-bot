@@ -48,7 +48,7 @@ def main():
         # Generate a report (this is just a placeholder for now)
         report = rep7.generate_report7()
         # Send the report back to the user
-        m = report['Разное']
+        m = report['·ON·FOOD']
         send_long_message(bot, message.chat.id, m)
         m = report['Кейсы']
         send_long_message(bot, message.chat.id, m)

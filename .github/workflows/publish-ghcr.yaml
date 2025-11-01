@@ -7,6 +7,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" >> .env
+          echo "MOA_API_KEY=${{ secrets.MOA_API_KEY }}" >> .env
+          echo "MOA_CHAT_ID=${{ vars.MOA_CHAT_ID }}" >> .env
+          echo "MOA_EMAIL=${{ vars.MOA_EMAIL }}" >> .env
+          echo "MOA_TABLE_ID_DAILY=${{ vars.MOA_TABLE_ID_DAILY }}" >> .env
+          echo "MOA_TABLE_ID_SCHEDULE=${{ vars.MOA_TABLE_ID_SCHEDULE }}" >> .env
+          echo -e "GOOGLE_CREDS=\"$(echo '${{ secrets.GOOGLE_CREDS }}' | base64)\"" >> .env
+        shell: bash
+
       - name: Build and push the image
         run: |
           docker login --username multifacs --password ${{ secrets.GH_PAT }} ghcr.io
