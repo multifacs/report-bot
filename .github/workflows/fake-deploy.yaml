@@ -1,0 +1,24 @@
+name: Deploy
+
+on: workflow_dispatch
+
+env:
+  DOCKER_HOST: ${{ vars.DOCKER_HOST }}
+
+jobs:
+  run_pull:
+    name: Run, Pull and Docker Run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create .env file
+        run: |
+          echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" >> .env
+          echo "MOA_API_KEY=${{ secrets.MOA_API_KEY }}" >> .env
+          echo "MOA_CHAT_ID=${{ vars.MOA_CHAT_ID }}" >> .env
+          echo "MOA_EMAIL=${{ vars.MOA_EMAIL }}" >> .env
+          echo "MOA_TABLE_ID_DAILY=${{ vars.MOA_TABLE_ID_DAILY }}" >> .env
+          echo "MOA_TABLE_ID_SCHEDULE=${{ vars.MOA_TABLE_ID_SCHEDULE }}" >> .env
+          echo -e "GOOGLE_CREDS=\"$(echo '${{ secrets.GOOGLE_CREDS }}' | base64)\"" >> .env
+          cat .env
+        shell: bash
